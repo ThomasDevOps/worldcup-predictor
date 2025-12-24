@@ -1,4 +1,6 @@
-# World Cup 2026 Predictor - Claude Code Instructions
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -14,56 +16,36 @@ A web application for predicting FIFA World Cup 2026 match scores. Users compete
 ## Common Commands
 
 ```bash
-# Development
 npm run dev          # Start dev server (http://localhost:5173)
-npm run build        # Build for production
+npm run build        # TypeScript check + Vite build
 npm run preview      # Preview production build
 npm run lint         # Run ESLint
-
-# Git
-git status           # Check changes
-git add -A && git commit -m "message"  # Commit all changes
-git push             # Push to GitHub
-
-# GitHub CLI
-gh pr create         # Create pull request
-gh issue create      # Create issue
 ```
 
-## Project Structure
+## Architecture
 
-```
-src/
-├── components/      # Reusable UI components
-├── pages/           # Page components (routes)
-│   └── admin/       # Admin-only pages
-├── hooks/           # Custom React hooks (useAuth, useMatches, etc.)
-├── lib/             # Supabase client & database types
-└── styles/          # Tailwind CSS
+**Frontend Structure:**
+- `src/App.tsx` - React Router configuration with nested routes
+- `src/hooks/` - Data fetching hooks (useAuth, useMatches, usePredictions, useLeaderboard)
+- `src/components/` - Shared UI components (MatchCard, PredictionForm, Layout)
+- `src/pages/` - Route components; admin pages under `pages/admin/`
 
-supabase/
-├── migrations/      # Database schema migrations (run in order)
-└── seed.sql         # Sample data for development
+**Data Flow:**
+1. `AuthProvider` wraps app, provides user context via `useAuth` hook
+2. `ProtectedRoute` and `AdminRoute` guard authenticated/admin pages
+3. Data hooks fetch from Supabase and return typed data
+4. Database triggers auto-calculate points when admin marks matches finished
 
-prd/                 # Product Requirements Documents
-.github/workflows/   # GitHub Actions CI/CD
-```
+**Database (Supabase):**
+- Migrations in `supabase/migrations/` - run in numeric order (001, 002, 003)
+- `seed.sql` contains all 48 teams and 104 match fixtures
+- RLS policies control data access based on user role and match timing
 
-## Key Files
+## Code Style
 
-- `src/lib/supabase.ts` - Supabase client initialization
-- `src/lib/database.types.ts` - TypeScript types for database tables
-- `src/hooks/useAuth.tsx` - Authentication context and hooks
-- `src/App.tsx` - Main routing configuration
-- `tailwind.config.js` - Custom color palette (dark theme)
-
-## Code Style Guidelines
-
-- Use TypeScript strict mode
-- Prefer functional components with hooks
-- Use Tailwind CSS utility classes (avoid inline styles)
+- TypeScript strict mode with functional components
+- Tailwind CSS utility classes - custom colors in `tailwind.config.js`: `background`, `card`, `primary`, `success`, `warning`, `live`, `text-primary`, `text-secondary`
 - Follow existing component patterns in `src/components/`
-- Custom colors defined in tailwind.config.js: `background`, `card`, `primary`, `success`, `warning`, `live`, `text-primary`, `text-secondary`
 
 ## Commit Message Convention
 
@@ -98,13 +80,12 @@ ci: add Supabase migrations workflow
 
 ## Database Schema
 
-**Tables:**
-- `profiles` - User profiles (display_name, total_points, is_admin)
-- `teams` - World Cup teams (name, country_code, group_name)
-- `matches` - Match fixtures (home/away teams, date, venue, scores, status)
-- `predictions` - User predictions (predicted scores, points_earned)
-
-**Match Status:** `scheduled` → `live` → `finished`
+| Table | Key Fields |
+|-------|------------|
+| `profiles` | display_name, total_points, is_admin |
+| `teams` | name, country_code, group_name |
+| `matches` | home/away team IDs, date, venue, scores, status (`scheduled`→`live`→`finished`) |
+| `predictions` | user_id, match_id, predicted_home/away_score, points_earned |
 
 ## Scoring System
 
@@ -124,27 +105,16 @@ Maximum per match: **14 points** (exact draw + bonus)
 - Points calculated automatically via database trigger when admin marks match as finished
 - Only admin can enter/edit match results
 
-## Testing Instructions
-
-1. Run `npm run dev` to start the dev server
-2. Create a test account via the Register page
-3. To test admin features, manually set `is_admin = true` in Supabase for your user
-
 ## Environment Variables
 
-Required in `.env`:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+Required in `.env` (see `.env.example`):
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 
-## Warnings
+## Important Notes
 
-- Never commit `.env` file (contains secrets)
-- Always run migrations in order (001, 002, 003)
-- The `predictions` RLS policies depend on match kickoff time for visibility
-- Database trigger handles point calculation - don't modify `points_earned` manually
-
-## PRD Location
-
-Full product requirements document: `prd/WorldCup2026_PRD.md`
+- To test admin features, manually set `is_admin = true` in Supabase for your user
+- Migrations must run in numeric order (001, 002, 003)
+- RLS policies hide other users' predictions until match kickoff time
+- Database trigger auto-calculates `points_earned` - don't modify manually
+- Full product requirements: `prd/WorldCup2026_PRD.md`
