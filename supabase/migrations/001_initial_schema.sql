@@ -1,8 +1,8 @@
 -- World Cup 2026 Predictor - Initial Schema
 -- Version 1.0
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Note: Using gen_random_uuid() which is built into PostgreSQL 13+
+-- No extension needed
 
 -- Create match_status enum
 CREATE TYPE match_status AS ENUM ('scheduled', 'live', 'finished');
@@ -19,7 +19,7 @@ CREATE TABLE profiles (
 
 -- Create teams table
 CREATE TABLE teams (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     country_code CHAR(2) NOT NULL,
     flag_url TEXT,
@@ -29,7 +29,7 @@ CREATE TABLE teams (
 
 -- Create matches table
 CREATE TABLE matches (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE RESTRICT,
     away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE RESTRICT,
     match_date TIMESTAMPTZ NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE matches (
 
 -- Create predictions table
 CREATE TABLE predictions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     predicted_home_score INTEGER NOT NULL CHECK (predicted_home_score >= 0 AND predicted_home_score <= 99),
