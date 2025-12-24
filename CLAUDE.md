@@ -42,8 +42,7 @@ src/
 └── styles/          # Tailwind CSS
 
 supabase/
-├── migrations/      # Database schema migrations (run in order)
-└── seed.sql         # Sample data for development
+└── migrations/      # Database migrations (schema + data)
 
 prd/                 # Product Requirements Documents
 .github/workflows/   # GitHub Actions CI/CD
@@ -138,10 +137,28 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
+## Database Migrations
+
+**All database changes MUST be added as migration files in `supabase/migrations/`.**
+
+**Naming convention:** `NNN_description.sql` (e.g., `005_add_user_avatars.sql`)
+
+**Current migrations:**
+- `001_initial_schema.sql` - Tables (profiles, teams, matches, predictions)
+- `002_scoring_trigger.sql` - Points calculation trigger
+- `003_row_level_security.sql` - RLS policies
+- `004_seed_data.sql` - Teams & matches data (48 teams, 104 matches)
+
+**Rules:**
+- Never modify existing migrations that have been deployed
+- Always create a new migration file for schema changes
+- Migrations run automatically via GitHub Actions on push to main
+- Test migrations locally before pushing
+
 ## Warnings
 
 - Never commit `.env` file (contains secrets)
-- Always run migrations in order (001, 002, 003)
+- Always run migrations in order (001, 002, 003, 004, ...)
 - The `predictions` RLS policies depend on match kickoff time for visibility
 - Database trigger handles point calculation - don't modify `points_earned` manually
 
