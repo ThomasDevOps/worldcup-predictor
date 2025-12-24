@@ -7,7 +7,8 @@
       "Bash(git branch:*)",
       "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth status)",
       "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo create worldcup-predictor --public --source=. --remote=origin --push --description \"World Cup 2026 Prediction Game - Predict match scores and compete with friends\")",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(git push)"
     ]
   }
 }

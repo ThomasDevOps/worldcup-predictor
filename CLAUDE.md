@@ -65,6 +65,37 @@ prd/                 # Product Requirements Documents
 - Follow existing component patterns in `src/components/`
 - Custom colors defined in tailwind.config.js: `background`, `card`, `primary`, `success`, `warning`, `live`, `text-primary`, `text-secondary`
 
+## Commit Message Convention
+
+**All commits MUST follow the Conventional Commits specification.**
+
+Format: `<type>(<scope>): <description>`
+
+**Types:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation only
+- `style` - Code style (formatting, semicolons, etc.)
+- `refactor` - Code change that neither fixes a bug nor adds a feature
+- `perf` - Performance improvement
+- `test` - Adding or updating tests
+- `build` - Build system or dependencies
+- `ci` - CI/CD configuration
+- `chore` - Other changes (e.g., updating .gitignore)
+
+**Scope (optional):** Component or area affected (e.g., `auth`, `matches`, `admin`, `db`)
+
+**Examples:**
+```
+feat(auth): add password reset functionality
+fix(predictions): correct points calculation for draws
+docs: update README with deployment instructions
+refactor(hooks): simplify useMatches hook
+ci: add Supabase migrations workflow
+```
+
+**Breaking changes:** Add `!` after type/scope: `feat(api)!: change response format`
+
 ## Database Schema
 
 **Tables:**
