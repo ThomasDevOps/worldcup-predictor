@@ -12,7 +12,31 @@ World Cup 2026 prediction game where users predict match scores and compete on a
 npm run dev       # Start dev server (http://localhost:5173)
 npm run build     # Build for production
 npm run lint      # Run ESLint
+
+# Local Database (requires Docker)
+npm run db:start  # Start local Supabase (first run downloads images)
+npm run db:stop   # Stop local Supabase containers
+npm run db:reset  # Reset DB and run all migrations + seed
+npm run db:studio # Open Supabase Studio (http://localhost:54323)
 ```
+
+## Local Development Setup
+
+**Prerequisites:** Docker Desktop must be installed and running.
+
+**First-time setup:**
+1. Install Docker Desktop from https://www.docker.com/products/docker-desktop/
+2. Start Docker Desktop and wait for it to be running
+3. Run `npx supabase init` (creates `supabase/config.toml`)
+4. Run `npm run db:start` (downloads images on first run, takes a few minutes)
+5. Run `npm run db:reset` to apply migrations and seed data
+6. Create `.env.local` with the local URLs (shown in db:start output)
+
+**Daily workflow:**
+1. `npm run db:start` - Start local Supabase
+2. `npm run dev` - Start Vite dev server
+3. Open http://localhost:5173 - Test the app
+4. Open http://localhost:54323 - Supabase Studio to inspect DB
 
 ## Architecture
 
