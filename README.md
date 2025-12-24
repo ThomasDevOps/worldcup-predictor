@@ -35,7 +35,7 @@ Maximum points per match: **14** (exact draw score + draw bonus)
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18.18+ (or 20.9+, or 21.1+)
 - npm or yarn
 - Supabase account
 
