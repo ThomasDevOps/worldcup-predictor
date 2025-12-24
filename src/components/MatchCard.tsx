@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { MatchWithTeams } from '../lib/database.types'
+import { TeamFlag } from './TeamFlag'
 
 interface MatchCardProps {
   match: MatchWithTeams
@@ -49,9 +50,9 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
         {/* Teams */}
         <div className="flex items-center justify-between mb-4">
           {/* Home Team */}
-          <div className="flex-1 text-center">
-            <div className="text-2xl mb-1">{match.home_team.country_code}</div>
-            <div className="text-sm text-text-secondary">{match.home_team.name}</div>
+          <div className="flex-1 flex flex-col items-center">
+            <TeamFlag countryCode={match.home_team.country_code} size="lg" />
+            <div className="text-sm text-text-secondary mt-2">{match.home_team.name}</div>
           </div>
 
           {/* Score / VS */}
@@ -66,9 +67,9 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
           </div>
 
           {/* Away Team */}
-          <div className="flex-1 text-center">
-            <div className="text-2xl mb-1">{match.away_team.country_code}</div>
-            <div className="text-sm text-text-secondary">{match.away_team.name}</div>
+          <div className="flex-1 flex flex-col items-center">
+            <TeamFlag countryCode={match.away_team.country_code} size="lg" />
+            <div className="text-sm text-text-secondary mt-2">{match.away_team.name}</div>
           </div>
         </div>
 

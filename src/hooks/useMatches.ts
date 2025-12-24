@@ -30,8 +30,10 @@ export function useMatches(filter?: string) {
     const { data, error } = await query
 
     if (error) {
+      console.error('Error fetching matches:', error)
       setError(error)
     } else {
+      console.log('Fetched matches:', data?.length)
       setMatches(data as unknown as MatchWithTeams[])
     }
     setLoading(false)

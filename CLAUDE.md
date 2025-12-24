@@ -91,10 +91,26 @@ Custom dark theme colors in `tailwind.config.js`: `background`, `card`, `primary
 
 ## Environment Variables
 
+**Production (.env):**
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+**Local Development (.env.local):**
+```
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+```
+
+## Local Supabase URLs
+
+| Service | URL |
+|---------|-----|
+| API | http://127.0.0.1:54321 |
+| Studio | http://127.0.0.1:54323 |
+| Mailpit | http://127.0.0.1:54324 |
+| Database | postgresql://postgres:postgres@127.0.0.1:54322/postgres |
 
 ## Key Constraints
 

@@ -3,11 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signInWithUsername } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -15,10 +15,10 @@ export function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await signIn(email, password)
+    const { error } = await signInWithUsername(username, password)
 
     if (error) {
-      setError(error.message)
+      setError(error.message || 'An error occurred during sign in')
       setLoading(false)
     } else {
       navigate('/dashboard')
@@ -29,8 +29,12 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">WC2026</h1>
-          <p className="text-text-secondary">World Cup Prediction Game</p>
+          <img
+            src="/wc2026-logo.png"
+            alt="FIFA World Cup 2026"
+            className="w-48 h-auto mx-auto mb-4"
+          />
+          <p className="text-text-secondary">Prediction Game</p>
         </div>
 
         <div className="card">
@@ -38,14 +42,14 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm text-text-secondary mb-1">
-                Email
+              <label htmlFor="username" className="block text-sm text-text-secondary mb-1">
+                Username
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="input w-full"
                 required
               />

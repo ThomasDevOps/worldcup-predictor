@@ -36,7 +36,7 @@ export function RegisterPage() {
     const { error } = await signUp(email, password, displayName.trim())
 
     if (error) {
-      setError(error.message)
+      setError(error.message || 'An error occurred during sign up')
       setLoading(false)
     } else {
       navigate('/dashboard')
@@ -47,8 +47,12 @@ export function RegisterPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">WC2026</h1>
-          <p className="text-text-secondary">World Cup Prediction Game</p>
+          <img
+            src="/wc2026-logo.png"
+            alt="FIFA World Cup 2026"
+            className="w-48 h-auto mx-auto mb-4"
+          />
+          <p className="text-text-secondary">Prediction Game</p>
         </div>
 
         <div className="card">

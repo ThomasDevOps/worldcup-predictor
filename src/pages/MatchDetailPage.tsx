@@ -3,6 +3,7 @@ import { useMatch } from '../hooks/useMatches'
 import { usePrediction, useMatchPredictions } from '../hooks/usePredictions'
 import { PredictionForm } from '../components/PredictionForm'
 import { PredictionsTable } from '../components/PredictionsTable'
+import { TeamFlag } from '../components/TeamFlag'
 
 export function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>()
@@ -78,9 +79,9 @@ export function MatchDetailPage() {
         {/* Teams */}
         <div className="flex items-center justify-between mb-6">
           {/* Home Team */}
-          <div className="flex-1 text-center">
-            <div className="text-4xl mb-2">{match.home_team.country_code}</div>
-            <div className="text-lg font-semibold">{match.home_team.name}</div>
+          <div className="flex-1 flex flex-col items-center">
+            <TeamFlag countryCode={match.home_team.country_code} size="xl" />
+            <div className="text-lg font-semibold mt-3">{match.home_team.name}</div>
           </div>
 
           {/* Score / VS */}
@@ -95,9 +96,9 @@ export function MatchDetailPage() {
           </div>
 
           {/* Away Team */}
-          <div className="flex-1 text-center">
-            <div className="text-4xl mb-2">{match.away_team.country_code}</div>
-            <div className="text-lg font-semibold">{match.away_team.name}</div>
+          <div className="flex-1 flex flex-col items-center">
+            <TeamFlag countryCode={match.away_team.country_code} size="xl" />
+            <div className="text-lg font-semibold mt-3">{match.away_team.name}</div>
           </div>
         </div>
 

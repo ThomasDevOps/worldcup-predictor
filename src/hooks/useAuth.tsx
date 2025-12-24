@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
+  signInWithUsername: (username: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
 }
@@ -23,15 +24,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch(() => {
         setLoading(false)
-      }
-    })
+      })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -73,6 +78,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }
 
+  async function signInWithUsername(username: string, password: string) {
+    // Look up email by username using database function
+    const { data: email, error: lookupError } = await supabase
+      .rpc('get_email_by_username', { username })
+
+    if (lookupError) {
+      console.error('Error looking up username:', lookupError)
+      return { error: new Error('An error occurred during sign in') }
+    }
+
+    if (!email) {
+      return { error: new Error('Invalid username or password') }
+    }
+
+    // Sign in with the found email
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      // Return generic error to not reveal if username exists
+      return { error: new Error('Invalid username or password') }
+    }
+
+    return { error: null }
+  }
+
   async function signUp(email: string, password: string, displayName: string) {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -81,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error }
 
-    // Create profile
-    if (data.user) {
+    // Create profile - session should be automatically set by Supabase client
+    if (data.user && data.session) {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -94,6 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error creating profile:', profileError)
         return { error: profileError }
       }
+    } else if (data.user && !data.session) {
+      // Email confirmation might be required - user created but no session
+      console.warn('User created but no session - email confirmation may be required')
+      return { error: new Error('Please check your email to confirm your account') }
     }
 
     return { error: null }
@@ -110,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     signIn,
+    signInWithUsername,
     signUp,
     signOut,
   }

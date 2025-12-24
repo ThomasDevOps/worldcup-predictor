@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMatches } from '../../hooks/useMatches'
 import { supabase } from '../../lib/supabase'
 import type { MatchWithTeams, MatchStatus } from '../../lib/database.types'
+import { TeamFlag } from '../../components/TeamFlag'
 
 type FilterStatus = 'all' | MatchStatus
 
@@ -132,9 +133,9 @@ export function EnterResultsPage() {
               </div>
 
               <div className="flex items-center justify-between mb-4">
-                <div className="flex-1">
-                  <div className="font-semibold">{match.home_team.name}</div>
-                  <div className="text-sm text-text-secondary">{match.home_team.country_code}</div>
+                <div className="flex-1 flex items-center gap-2">
+                  <TeamFlag countryCode={match.home_team.country_code} size="md" />
+                  <span className="font-semibold">{match.home_team.name}</span>
                 </div>
 
                 {editingMatch === match.id ? (
@@ -165,9 +166,9 @@ export function EnterResultsPage() {
                   </div>
                 )}
 
-                <div className="flex-1 text-right">
-                  <div className="font-semibold">{match.away_team.name}</div>
-                  <div className="text-sm text-text-secondary">{match.away_team.country_code}</div>
+                <div className="flex-1 flex items-center justify-end gap-2">
+                  <span className="font-semibold">{match.away_team.name}</span>
+                  <TeamFlag countryCode={match.away_team.country_code} size="md" />
                 </div>
               </div>
 
