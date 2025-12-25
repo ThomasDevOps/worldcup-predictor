@@ -43,7 +43,7 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm text-text-secondary mb-1">
-                Username
+                Username or Email
               </label>
               <input
                 id="username"
@@ -51,6 +51,7 @@ export function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="input w-full"
+                placeholder="Enter username or email"
                 required
               />
             </div>
