@@ -15,13 +15,19 @@ export function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await signInWithUsername(username, password)
+    try {
+      const { error } = await signInWithUsername(username, password)
 
-    if (error) {
-      setError(error.message || 'An error occurred during sign in')
+      if (error) {
+        setError(error.message || 'An error occurred during sign in')
+        setLoading(false)
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-    } else {
-      navigate('/dashboard')
     }
   }
 
