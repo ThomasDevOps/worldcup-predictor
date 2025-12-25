@@ -97,10 +97,10 @@ export function MyPredictionsPage() {
                         </div>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-center font-mono">
+                    <td className="px-4 py-3 text-center font-mono whitespace-nowrap">
                       {prediction.predicted_home_score} - {prediction.predicted_away_score}
                     </td>
-                    <td className="px-4 py-3 text-center font-mono">
+                    <td className="px-4 py-3 text-center font-mono whitespace-nowrap">
                       {isFinished ? (
                         `${match.home_score} - ${match.away_score}`
                       ) : (
