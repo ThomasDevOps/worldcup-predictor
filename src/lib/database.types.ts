@@ -36,6 +36,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       teams: {
         Row: {
@@ -62,6 +63,7 @@ export interface Database {
           group_name?: string
           created_at?: string
         }
+        Relationships: []
       }
       matches: {
         Row: {
@@ -103,6 +105,20 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       predictions: {
         Row: {
@@ -135,16 +151,38 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_match_id_fkey"
+            columns: ["match_id"]
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_email_by_username: {
+        Args: {
+          username: string
+        }
+        Returns: string | null
+      }
     }
     Enums: {
       match_status: MatchStatus
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

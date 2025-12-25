@@ -21,10 +21,16 @@ export function ProfilePage() {
 
     setSaving(true)
 
+    if (!profile?.id) {
+      setError('Profile not found')
+      setSaving(false)
+      return
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({ display_name: displayName.trim() })
-      .eq('id', profile?.id)
+      .eq('id', profile.id)
 
     if (error) {
       setError(error.message)
