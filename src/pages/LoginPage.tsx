@@ -30,7 +30,7 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img
-            src="/wc2026-logo.png"
+            src="/wc2026-logo.svg"
             alt="FIFA World Cup 2026"
             className="w-48 h-auto mx-auto mb-4"
           />

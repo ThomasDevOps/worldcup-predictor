@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Trophy base -->
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="50%" style="stop-color:#FFA500"/>
+      <stop offset="100%" style="stop-color:#FFD700"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Trophy cup -->
+  <path d="M60 50 L60 90 Q60 130 100 140 Q140 130 140 90 L140 50 Z" fill="url(#gold)" stroke="#B8860B" stroke-width="2"/>
+
+  <!-- Trophy handles -->
+  <path d="M60 60 Q30 60 30 85 Q30 110 55 110" fill="none" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M140 60 Q170 60 170 85 Q170 110 145 110" fill="none" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Trophy stem -->
+  <rect x="90" y="140" width="20" height="20" fill="url(#gold)" stroke="#B8860B" stroke-width="1"/>
+
+  <!-- Trophy base -->
+  <path d="M70 160 L130 160 L135 175 L65 175 Z" fill="url(#gold)" stroke="#B8860B" stroke-width="1"/>
+
+  <!-- Soccer ball icon on trophy -->
+  <circle cx="100" cy="85" r="20" fill="white" stroke="#333" stroke-width="1"/>
+  <path d="M100 65 L100 70 M85 78 L90 80 M115 78 L110 80 M88 98 L92 94 M112 98 L108 94" stroke="#333" stroke-width="2"/>
+  <circle cx="100" cy="85" r="8" fill="none" stroke="#333" stroke-width="1"/>
+
+  <!-- 2026 text -->
+  <text x="100" y="198" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#00CED1">2026</text>
+</svg>
