@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getFlagUrl, getFlag } from '../lib/flags'
 
 interface TeamFlagProps {
@@ -13,19 +14,21 @@ const sizeMap = {
   xl: { px: 80, class: 'w-20 h-14' },
 }
 
+const emojiSizeMap = {
+  sm: 'text-lg',
+  md: 'text-2xl',
+  lg: 'text-4xl',
+  xl: 'text-5xl',
+}
+
 export function TeamFlag({ countryCode, size = 'md', className = '' }: TeamFlagProps) {
+  const [imageError, setImageError] = useState(false)
   const { px, class: sizeClass } = sizeMap[size]
   const flagUrl = getFlagUrl(countryCode, px)
 
-  // For TBD teams or missing flags, show emoji
-  if (!flagUrl) {
-    const emojiSize = {
-      sm: 'text-lg',
-      md: 'text-2xl',
-      lg: 'text-4xl',
-      xl: 'text-5xl',
-    }
-    return <span className={`${emojiSize[size]} ${className}`}>{getFlag(countryCode)}</span>
+  // For TBD teams, missing flags, or failed image loads, show emoji
+  if (!flagUrl || imageError) {
+    return <span className={`${emojiSizeMap[size]} ${className}`}>{getFlag(countryCode)}</span>
   }
 
   return (
@@ -34,6 +37,7 @@ export function TeamFlag({ countryCode, size = 'md', className = '' }: TeamFlagP
       alt={`${countryCode} flag`}
       className={`${sizeClass} object-cover rounded-sm shadow-sm ${className}`}
       loading="lazy"
+      onError={() => setImageError(true)}
     />
   )
 }
