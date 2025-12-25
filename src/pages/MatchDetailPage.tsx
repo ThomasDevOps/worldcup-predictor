@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useMatch } from '../hooks/useMatches'
 import { usePrediction, useMatchPredictions } from '../hooks/usePredictions'
@@ -11,6 +12,7 @@ export function MatchDetailPage() {
   const { match, loading: matchLoading } = useMatch(matchId!)
   const { prediction, saving, savePrediction } = usePrediction(matchId!)
   const { predictions, loading: predictionsLoading } = useMatchPredictions(matchId!)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   if (matchLoading) {
     return (
@@ -51,7 +53,12 @@ export function MatchDetailPage() {
   }
 
   const handleSavePrediction = async (homeScore: number, awayScore: number) => {
-    await savePrediction(homeScore, awayScore)
+    setSaveError(null)
+    const { error } = await savePrediction(homeScore, awayScore)
+    if (error) {
+      console.error('Error saving prediction:', error)
+      setSaveError(error.message || 'Failed to save prediction. Please try again.')
+    }
   }
 
   return (
@@ -124,6 +131,9 @@ export function MatchDetailPage() {
             saving={saving}
             onSave={handleSavePrediction}
           />
+          {saveError && (
+            <p className="text-live text-center text-sm mt-4">{saveError}</p>
+          )}
         </div>
       )}
 
