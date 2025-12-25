@@ -32,9 +32,10 @@ export function MatchDetailPage() {
   }
 
   const matchDate = new Date(match.match_date)
-  const isLocked = matchDate <= new Date()
+  const isPastKickoff = matchDate <= new Date()
   const isFinished = match.status === 'finished'
-  const isLive = match.status === 'live'
+  const isLocked = isPastKickoff || isFinished
+  const canEdit = !isPastKickoff && match.status === 'scheduled'
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -76,9 +77,8 @@ export function MatchDetailPage() {
         {/* Stage Badge */}
         <div className="flex justify-between items-center mb-6">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
-          {isLive && <span className="badge-live">LIVE</span>}
           {isFinished && <span className="badge-success">FINAL</span>}
-          {isLocked && !isFinished && !isLive && (
+          {isLocked && !isFinished && (
             <span className="badge bg-warning/20 text-warning">LOCKED</span>
           )}
         </div>
@@ -93,7 +93,7 @@ export function MatchDetailPage() {
 
           {/* Score / VS */}
           <div className="px-8 text-center">
-            {isFinished || isLive ? (
+            {isFinished ? (
               <div className="text-4xl font-bold">
                 {match.home_score} - {match.away_score}
               </div>
@@ -122,8 +122,8 @@ export function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Prediction Form (before lockout) */}
-      {!isLocked && (
+      {/* Prediction Form (only when editable) */}
+      {canEdit && (
         <div className="card">
           <PredictionForm
             match={match}

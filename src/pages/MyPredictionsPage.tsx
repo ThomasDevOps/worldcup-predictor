@@ -103,8 +103,6 @@ export function MyPredictionsPage() {
                     <td className="px-4 py-3 text-center font-mono">
                       {isFinished ? (
                         `${match.home_score} - ${match.away_score}`
-                      ) : match.status === 'live' ? (
-                        <span className="badge-live">LIVE</span>
                       ) : (
                         <span className="text-text-secondary">-</span>
                       )}

@@ -14,9 +14,6 @@ export function DashboardPage() {
     .filter((m) => m.status === 'scheduled')
     .slice(0, 3)
 
-  // Get live matches
-  const liveMatches = matches.filter((m) => m.status === 'live')
-
   // Get user's rank
   const userRank = profiles.findIndex((p) => p.id === profile?.id) + 1
 
@@ -47,21 +44,6 @@ export function DashboardPage() {
           <div className="text-3xl font-bold">{profiles.length}</div>
         </div>
       </div>
-
-      {/* Live Matches */}
-      {liveMatches.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="badge-live">LIVE</span>
-            <h2 className="text-lg font-semibold">Live Matches</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {liveMatches.map((match) => (
-              <MatchCard key={match.id} match={match} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Upcoming Matches */}
       <div>

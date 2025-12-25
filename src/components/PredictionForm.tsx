@@ -14,7 +14,8 @@ export function PredictionForm({ match, prediction, saving, onSave }: Prediction
   const [error, setError] = useState<string | null>(null)
 
   const matchDate = new Date(match.match_date)
-  const isLocked = matchDate <= new Date()
+  const isPastKickoff = matchDate <= new Date()
+  const isLocked = isPastKickoff || match.status === 'finished'
 
   useEffect(() => {
     if (prediction) {

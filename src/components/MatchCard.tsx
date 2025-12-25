@@ -13,9 +13,9 @@ interface MatchCardProps {
 
 export function MatchCard({ match, userPrediction }: MatchCardProps) {
   const matchDate = new Date(match.match_date)
-  const isLocked = matchDate <= new Date()
+  const isPastKickoff = matchDate <= new Date()
   const isFinished = match.status === 'finished'
-  const isLive = match.status === 'live'
+  const isLocked = isPastKickoff || isFinished
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -38,9 +38,11 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
         {/* Stage Badge */}
         <div className="flex justify-between items-center mb-4">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
-          {isLive && <span className="badge-live">LIVE</span>}
           {isFinished && <span className="badge-success">FINAL</span>}
-          {!isLocked && !isFinished && !isLive && (
+          {isLocked && !isFinished && (
+            <span className="badge bg-warning/20 text-warning">LOCKED</span>
+          )}
+          {!isLocked && (
             <span className="badge bg-text-secondary/20 text-text-secondary">
               Predictions Open
             </span>
@@ -57,7 +59,7 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
 
           {/* Score / VS */}
           <div className="px-4">
-            {isFinished || isLive ? (
+            {isFinished ? (
               <div className="text-2xl font-bold">
                 {match.home_score} - {match.away_score}
               </div>

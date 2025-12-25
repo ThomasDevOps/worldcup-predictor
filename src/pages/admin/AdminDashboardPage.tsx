@@ -7,12 +7,11 @@ export function AdminDashboardPage() {
   const { profiles } = useLeaderboard()
 
   const scheduledMatches = matches.filter((m) => m.status === 'scheduled').length
-  const liveMatches = matches.filter((m) => m.status === 'live').length
   const finishedMatches = matches.filter((m) => m.status === 'finished').length
 
-  // Matches that need results (live or recently finished without scores)
+  // Matches that need results (past kickoff but not finished)
   const matchesNeedingResults = matches.filter(
-    (m) => m.status === 'live' || (m.status === 'scheduled' && new Date(m.match_date) < new Date())
+    (m) => m.status === 'scheduled' && new Date(m.match_date) < new Date()
   )
 
   return (
@@ -23,7 +22,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="card">
           <div className="text-text-secondary text-sm mb-1">Total Players</div>
           <div className="text-2xl font-bold">{profiles.length}</div>
@@ -31,10 +30,6 @@ export function AdminDashboardPage() {
         <div className="card">
           <div className="text-text-secondary text-sm mb-1">Scheduled</div>
           <div className="text-2xl font-bold">{scheduledMatches}</div>
-        </div>
-        <div className="card">
-          <div className="text-text-secondary text-sm mb-1">Live</div>
-          <div className="text-2xl font-bold text-live">{liveMatches}</div>
         </div>
         <div className="card">
           <div className="text-text-secondary text-sm mb-1">Finished</div>
