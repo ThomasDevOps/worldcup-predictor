@@ -73,17 +73,6 @@ export function EnterResultsPage() {
     setSaving(false)
   }
 
-  const handleSetLive = async (matchId: string) => {
-    const { error } = await supabase
-      .from('matches')
-      .update({ status: 'live' as MatchStatus })
-      .eq('id', matchId)
-
-    if (!error) {
-      refetch()
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -93,7 +82,7 @@ export function EnterResultsPage() {
 
       {/* Filter */}
       <div className="flex gap-2">
-        {(['all', 'scheduled', 'live', 'finished'] as FilterStatus[]).map((status) => (
+        {(['all', 'scheduled', 'finished'] as FilterStatus[]).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -121,9 +110,7 @@ export function EnterResultsPage() {
                 <span className="badge bg-primary/20 text-primary">{match.stage}</span>
                 <span
                   className={`badge ${
-                    match.status === 'live'
-                      ? 'badge-live'
-                      : match.status === 'finished'
+                    match.status === 'finished'
                       ? 'badge-success'
                       : 'bg-text-secondary/20 text-text-secondary'
                   }`}
@@ -160,7 +147,7 @@ export function EnterResultsPage() {
                   </div>
                 ) : (
                   <div className="text-2xl font-bold px-4">
-                    {match.status === 'finished' || match.status === 'live'
+                    {match.status === 'finished'
                       ? `${match.home_score} - ${match.away_score}`
                       : 'vs'}
                   </div>
@@ -202,22 +189,12 @@ export function EnterResultsPage() {
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => handleEdit(match)}
-                      className="btn-primary"
-                    >
-                      {match.status === 'finished' ? 'Edit Result' : 'Enter Result'}
-                    </button>
-                    {match.status === 'scheduled' && (
-                      <button
-                        onClick={() => handleSetLive(match.id)}
-                        className="btn-secondary"
-                      >
-                        Set Live
-                      </button>
-                    )}
-                  </>
+                  <button
+                    onClick={() => handleEdit(match)}
+                    className="btn-primary"
+                  >
+                    {match.status === 'finished' ? 'Edit Result' : 'Enter Result'}
+                  </button>
                 )}
               </div>
             </div>
