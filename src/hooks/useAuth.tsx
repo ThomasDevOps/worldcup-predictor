@@ -96,28 +96,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }
 
-  async function signInWithUsername(username: string, password: string) {
-    // Look up email by username using database function
-    const { data: email, error: lookupError } = await supabase
-      .rpc('get_email_by_username', { username })
+  async function signInWithUsername(usernameOrEmail: string, password: string) {
+    let email = usernameOrEmail
 
-    if (lookupError) {
-      console.error('Error looking up username:', lookupError)
-      return { error: new Error('An error occurred during sign in') }
+    // If input doesn't look like an email, look up the email by username
+    if (!usernameOrEmail.includes('@')) {
+      const { data: foundEmail, error: lookupError } = await supabase
+        .rpc('get_email_by_username', { username: usernameOrEmail })
+
+      if (lookupError) {
+        console.error('Error looking up username:', lookupError)
+        return { error: new Error('An error occurred during sign in') }
+      }
+
+      if (!foundEmail) {
+        return { error: new Error('Invalid username or password') }
+      }
+
+      email = foundEmail
     }
 
-    if (!email) {
-      return { error: new Error('Invalid username or password') }
-    }
-
-    // Sign in with the found email
+    // Sign in with the email
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
-      // Return generic error to not reveal if username exists
+      // Return generic error to not reveal if username/email exists
       return { error: new Error('Invalid username or password') }
     }
 
