@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
-          fetchProfile(session.user.id)
+          fetchOrCreateProfile(session.user.id, session.user)
         } else {
           setLoading(false)
         }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          await fetchOrCreateProfile(session.user.id, session.user)
         } else {
           setProfile(null)
         }
@@ -55,14 +55,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId: string) {
+  async function fetchOrCreateProfile(userId: string, user: User) {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
 
-    if (error) {
+    if (error && error.code === 'PGRST116') {
+      // Profile not found - create it from user metadata (set during signup)
+      const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
+
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          display_name: displayName,
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating profile:', createError)
+      } else {
+        setProfile(newProfile)
+      }
+    } else if (error) {
       console.error('Error fetching profile:', error)
     } else {
       setProfile(data)
@@ -112,12 +130,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/login`,
+        data: {
+          display_name: displayName,
+        },
       },
     })
 
     if (error) return { error }
 
-    // Create profile - session should be automatically set by Supabase client
+    // If session exists (no email confirmation required), create profile immediately
     if (data.user && data.session) {
       const { error: profileError } = await supabase
         .from('profiles')
@@ -131,8 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: profileError }
       }
     } else if (data.user && !data.session) {
-      // Email confirmation might be required - user created but no session
-      console.warn('User created but no session - email confirmation may be required')
+      // Email confirmation required - profile will be created after confirmation
+      // displayName is stored in user metadata and will be used when profile is created
       return { error: new Error('Please check your email to confirm your account') }
     }
 
