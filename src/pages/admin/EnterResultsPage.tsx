@@ -80,6 +80,29 @@ export function EnterResultsPage() {
     setSaving(false)
   }
 
+  const handleResetToScheduled = async (matchId: string) => {
+    if (!confirm('Reset this match to scheduled? This will clear the scores and recalculate the leaderboard.')) {
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+
+    // Call the database function that handles everything with proper permissions
+    const { error } = await supabase.rpc('reset_match_to_scheduled', {
+      p_match_id: matchId
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setEditingMatch(null)
+      refetch()
+    }
+
+    setSaving(false)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -208,6 +231,13 @@ export function EnterResultsPage() {
                         >
                           {saving ? 'Saving...' : 'Finish Match'}
                         </button>
+                        <button
+                          onClick={() => handleResetToScheduled(match.id)}
+                          disabled={saving}
+                          className="btn-secondary bg-warning/20 text-warning hover:bg-warning/30 disabled:opacity-50"
+                        >
+                          {saving ? 'Resetting...' : 'Reset to Scheduled'}
+                        </button>
                       </>
                     ) : match.status === 'scheduled' ? (
                       <>
@@ -227,13 +257,22 @@ export function EnterResultsPage() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => handleSave(match.id, true)}
-                        disabled={saving}
-                        className="btn-primary disabled:opacity-50"
-                      >
-                        {saving ? 'Saving...' : 'Save Result'}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleSave(match.id, true)}
+                          disabled={saving}
+                          className="btn-primary disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Save Result'}
+                        </button>
+                        <button
+                          onClick={() => handleResetToScheduled(match.id)}
+                          disabled={saving}
+                          className="btn-secondary bg-warning/20 text-warning hover:bg-warning/30 disabled:opacity-50"
+                        >
+                          {saving ? 'Resetting...' : 'Reset to Scheduled'}
+                        </button>
+                      </>
                     )}
                     <button onClick={handleCancel} className="btn-secondary">
                       Cancel
