@@ -47,6 +47,10 @@ test-results
 # Misc
 .cache
 
+# Database backups (keep directory, ignore contents)
+backups/*.sql
+backups/*.sql.gz
+
 # Local Supabase config
 supabase/config.toml
 
