@@ -45,3 +45,9 @@ test-results
 
 # Misc
 .cache
+
+# Local Supabase config
+supabase/config.toml
+
+# Claude Code local settings
+.claude/settings.local.json
