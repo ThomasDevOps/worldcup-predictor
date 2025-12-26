@@ -102,6 +102,19 @@ export function Layout() {
               {link.label}
             </NavLink>
           ))}
+          {profile?.is_admin && adminLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `flex flex-col items-center px-3 py-2 text-xs ${
+                  isActive ? 'text-warning' : 'text-warning/70'
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
         </div>
       </nav>
 
