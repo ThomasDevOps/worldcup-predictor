@@ -8,6 +8,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -35,9 +37,15 @@ export function RegisterPage() {
 
     const { error } = await signUp(email, password, displayName.trim())
 
+    setLoading(false)
+
     if (error) {
-      setError(error.message || 'An error occurred during sign up')
-      setLoading(false)
+      // Check if this is the email confirmation message (not really an error)
+      if (error.message?.includes('check your email')) {
+        setSuccess('Account created! Please check your email to confirm your account before signing in.')
+      } else {
+        setError(error.message || 'An error occurred during sign up')
+      }
     } else {
       navigate('/dashboard')
     }
@@ -118,12 +126,18 @@ export function RegisterPage() {
 
             {error && <p className="text-live text-sm">{error}</p>}
 
+            {success && (
+              <div className="bg-success/20 text-success text-sm py-3 px-4 rounded-lg">
+                {success}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!success}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Creating account...' : success ? 'Account Created' : 'Create Account'}
             </button>
           </form>
 
