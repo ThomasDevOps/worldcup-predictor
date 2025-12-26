@@ -88,13 +88,13 @@ export function Layout() {
 
       {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-text-secondary/10 z-50">
-        <div className="flex justify-around py-2">
+        <div className="flex overflow-x-auto py-2 px-2 gap-1">
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `flex flex-col items-center px-3 py-2 text-xs ${
+                `flex-shrink-0 flex flex-col items-center px-3 py-2 text-xs ${
                   isActive ? 'text-primary' : 'text-text-secondary'
                 }`
               }
@@ -102,19 +102,24 @@ export function Layout() {
               {link.label}
             </NavLink>
           ))}
-          {profile?.is_admin && adminLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `flex flex-col items-center px-3 py-2 text-xs ${
-                  isActive ? 'text-warning' : 'text-warning/70'
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          {profile?.is_admin && (
+            <>
+              <div className="flex-shrink-0 w-px h-8 self-center bg-text-secondary/20" />
+              {adminLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `flex-shrink-0 flex flex-col items-center px-3 py-2 text-xs ${
+                      isActive ? 'text-warning' : 'text-warning/70'
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </>
+          )}
         </div>
       </nav>
 
