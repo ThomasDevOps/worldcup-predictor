@@ -23,22 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          fetchOrCreateProfile(session.user.id, session.user)
-        } else {
-          setLoading(false)
-        }
-      })
-      .catch(() => {
-        setLoading(false)
-      })
-
-    // Listen for auth changes
+    // Listen for auth changes - handles login, logout, and token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session)
@@ -52,38 +37,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        fetchOrCreateProfile(session.user.id, session.user)
+      } else {
+        setLoading(false)
+      }
+    })
+
     return () => subscription.unsubscribe()
   }, [])
 
   async function fetchOrCreateProfile(userId: string, user: User) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // Add timeout to prevent infinite loading if Supabase hangs
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+    )
 
-    if (error && error.code === 'PGRST116') {
-      // Profile not found - create it from user metadata (set during signup)
-      const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
+    try {
+      const { data, error } = await Promise.race([
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        timeoutPromise
+      ])
 
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          display_name: displayName,
-        })
-        .select()
-        .single()
+      if (error && error.code === 'PGRST116') {
+        // Profile not found - create it from user metadata (set during signup)
+        const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
 
-      if (createError) {
-        console.error('Error creating profile:', createError)
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            display_name: displayName,
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating profile:', createError)
+        } else {
+          setProfile(newProfile)
+        }
+      } else if (error) {
+        console.error('Error fetching profile:', error)
       } else {
-        setProfile(newProfile)
+        setProfile(data)
       }
-    } else if (error) {
-      console.error('Error fetching profile:', error)
-    } else {
-      setProfile(data)
+    } catch (err) {
+      console.error('Profile fetch failed (timeout or error):', err)
     }
     setLoading(false)
   }
@@ -144,22 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error }
 
-    // If session exists (no email confirmation required), create profile immediately
-    if (data.user && data.session) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          display_name: displayName,
-        })
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError)
-        return { error: profileError }
-      }
-    } else if (data.user && !data.session) {
-      // Email confirmation required - profile will be created after confirmation
-      // displayName is stored in user metadata and will be used when profile is created
+    // Profile will be created by fetchOrCreateProfile via onAuthStateChange
+    // The displayName is stored in user metadata and will be used there
+    if (data.user && !data.session) {
+      // Email confirmation required
       return { error: new Error('Please check your email to confirm your account') }
     }
 

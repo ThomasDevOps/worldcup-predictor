@@ -7,10 +7,11 @@ interface TeamFlagProps {
   className?: string
 }
 
+// FlagCDN only supports specific widths: 20, 40, 80, 160, 320, 640, 1280, 2560
 const sizeMap = {
-  sm: { px: 24, class: 'w-6 h-4' },
+  sm: { px: 40, class: 'w-6 h-4' },
   md: { px: 40, class: 'w-10 h-7' },
-  lg: { px: 64, class: 'w-16 h-11' },
+  lg: { px: 80, class: 'w-16 h-11' },
   xl: { px: 80, class: 'w-20 h-14' },
 }
 

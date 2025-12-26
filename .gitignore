@@ -33,6 +33,11 @@ yarn-error.log*
 
 # Testing
 coverage
+playwright-report
+test-results
+
+# Playwright MCP screenshots
+.playwright-mcp
 
 # TypeScript
 *.tsbuildinfo
