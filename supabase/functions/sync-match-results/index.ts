@@ -45,6 +45,8 @@ interface RequestBody {
   competition?: string; // Override competition code (default: WC)
   dryRun?: boolean; // If true, show what would be updated without updating
   daysBack?: number; // How many days back to fetch (default: 7)
+  syncKnockoutTeams?: boolean; // If true, sync knockout stage team assignments
+  syncGroupTeams?: boolean; // If true, sync group stage TBD team assignments (playoff qualifiers)
 }
 
 // Map football-data.org status to our database status
@@ -58,6 +60,189 @@ function mapStatus(apiStatus: string): "scheduled" | "live" | "finished" {
     default:
       return "scheduled";
   }
+}
+
+// Map API stage names to our database stage names
+function mapStageName(apiStage: string): string {
+  const stageMap: Record<string, string> = {
+    "LAST_32": "Round of 32",
+    "LAST_16": "Round of 16",
+    "QUARTER_FINALS": "Quarter-finals",
+    "SEMI_FINALS": "Semi-finals",
+    "THIRD_PLACE": "Third Place",
+    "FINAL": "Final",
+  };
+  return stageMap[apiStage] || apiStage;
+}
+
+// Handle knockout teams sync - updates TBD teams with actual qualified teams
+async function handleKnockoutTeamsSync(
+  supabase: ReturnType<typeof createClient>,
+  apiKey: string,
+  competition: string,
+  dryRun: boolean
+): Promise<Response> {
+  console.log("Starting knockout teams sync...");
+
+  const results = {
+    mode: dryRun ? "DRY_RUN" : "PRODUCTION",
+    type: "KNOCKOUT_TEAMS_SYNC",
+    updated: 0,
+    skipped: 0,
+    errors: [] as string[],
+    matches: [] as object[],
+  };
+
+  // Fetch knockout stage matches from API
+  const knockoutStages = "LAST_32,LAST_16,QUARTER_FINALS,SEMI_FINALS,THIRD_PLACE,FINAL";
+  const apiUrl = `${FOOTBALL_DATA_API_URL}/competitions/${competition}/matches?stage=${knockoutStages}`;
+
+  console.log(`Fetching knockout matches from: ${apiUrl}`);
+
+  const apiResponse = await fetch(apiUrl, {
+    headers: { "X-Auth-Token": apiKey },
+  });
+
+  if (!apiResponse.ok) {
+    const errorText = await apiResponse.text();
+    throw new Error(`Football-data.org API error: ${apiResponse.status} - ${errorText}`);
+  }
+
+  const data: FootballDataResponse = await apiResponse.json();
+  console.log(`Found ${data.matches.length} knockout matches from API`);
+
+  // Process each knockout match
+  for (const apiMatch of data.matches) {
+    try {
+      // Skip if teams are not yet determined (null in API)
+      if (!apiMatch.homeTeam?.id || !apiMatch.awayTeam?.id) {
+        results.skipped++;
+        continue;
+      }
+
+      const apiStage = (apiMatch as unknown as { stage: string }).stage;
+      const dbStage = mapStageName(apiStage);
+      const matchDate = apiMatch.utcDate.split("T")[0];
+
+      // Find teams in our database by name
+      const { data: homeTeam } = await supabase
+        .from("teams")
+        .select("id, name")
+        .or(`name.ilike.%${apiMatch.homeTeam.name}%,name.ilike.%${apiMatch.homeTeam.shortName}%`)
+        .not("name", "ilike", "%TBD%")
+        .single();
+
+      const { data: awayTeam } = await supabase
+        .from("teams")
+        .select("id, name")
+        .or(`name.ilike.%${apiMatch.awayTeam.name}%,name.ilike.%${apiMatch.awayTeam.shortName}%`)
+        .not("name", "ilike", "%TBD%")
+        .single();
+
+      if (!homeTeam || !awayTeam) {
+        results.skipped++;
+        results.errors.push(
+          `Could not find teams: ${apiMatch.homeTeam.name} vs ${apiMatch.awayTeam.name}`
+        );
+        continue;
+      }
+
+      // Find the knockout match in our database by stage and date
+      const { data: dbMatches, error: matchError } = await supabase
+        .from("matches")
+        .select("id, home_team_id, away_team_id, stage")
+        .eq("stage", dbStage)
+        .gte("match_date", `${matchDate}T00:00:00`)
+        .lt("match_date", `${matchDate}T23:59:59`);
+
+      if (matchError || !dbMatches || dbMatches.length === 0) {
+        results.skipped++;
+        results.errors.push(`No ${dbStage} match found on ${matchDate}`);
+        continue;
+      }
+
+      // Find the specific match - check if it has TBD teams
+      const dbMatch = dbMatches.find(m => {
+        // Match should have TBD teams (we want to update those)
+        return m.home_team_id !== homeTeam.id || m.away_team_id !== awayTeam.id;
+      });
+
+      if (!dbMatch) {
+        // Teams already match, skip
+        results.skipped++;
+        continue;
+      }
+
+      // Check if current teams are TBD
+      const { data: currentHomeTeam } = await supabase
+        .from("teams")
+        .select("name")
+        .eq("id", dbMatch.home_team_id)
+        .single();
+
+      const { data: currentAwayTeam } = await supabase
+        .from("teams")
+        .select("name")
+        .eq("id", dbMatch.away_team_id)
+        .single();
+
+      const isTBDMatch =
+        currentHomeTeam?.name?.includes("TBD") || currentAwayTeam?.name?.includes("TBD");
+
+      if (!isTBDMatch) {
+        // Not a TBD match, already has real teams
+        results.skipped++;
+        continue;
+      }
+
+      if (dryRun) {
+        results.updated++;
+        results.matches.push({
+          id: dbMatch.id,
+          stage: dbStage,
+          date: matchDate,
+          currentTeams: `${currentHomeTeam?.name} vs ${currentAwayTeam?.name}`,
+          newTeams: `${homeTeam.name} vs ${awayTeam.name}`,
+          action: "WOULD_UPDATE",
+        });
+        console.log(
+          `[DRY RUN] Would update ${dbStage}: ${currentHomeTeam?.name} vs ${currentAwayTeam?.name} → ${homeTeam.name} vs ${awayTeam.name}`
+        );
+        continue;
+      }
+
+      // Update the match with real teams
+      const { error: updateError } = await supabase
+        .from("matches")
+        .update({
+          home_team_id: homeTeam.id,
+          away_team_id: awayTeam.id,
+        })
+        .eq("id", dbMatch.id);
+
+      if (updateError) {
+        results.errors.push(`Failed to update match ${dbMatch.id}: ${updateError.message}`);
+        continue;
+      }
+
+      results.updated++;
+      results.matches.push({
+        id: dbMatch.id,
+        stage: dbStage,
+        date: matchDate,
+        teams: `${homeTeam.name} vs ${awayTeam.name}`,
+        action: "UPDATED",
+      });
+
+      console.log(`Updated ${dbStage}: ${homeTeam.name} vs ${awayTeam.name}`);
+    } catch (error) {
+      results.errors.push(`Error processing knockout match: ${error}`);
+    }
+  }
+
+  return new Response(JSON.stringify(results, null, 2), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 Deno.serve(async (req) => {
@@ -77,6 +262,7 @@ Deno.serve(async (req) => {
       testMode = false,
       competition = WORLD_CUP_CODE,
       dryRun = false,
+      syncKnockoutTeams = false,
       // daysBack reserved for future use (e.g., fetching historical results)
     } = body;
 
@@ -90,6 +276,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Handle knockout teams sync mode
+    if (syncKnockoutTeams) {
+      return await handleKnockoutTeamsSync(supabase, footballDataApiKey, competition, dryRun);
+    }
 
     // Fetch matches from football-data.org
     // Only fetch live matches (IN_PLAY, PAUSED) and recently finished matches (FINISHED)
@@ -321,10 +512,22 @@ Deno.serve(async (req) => {
   2. Run `supabase functions serve --env-file supabase/.env.local`
   3. Make HTTP requests:
 
-  # Production mode (World Cup):
+  # Production mode (World Cup) - sync live/finished match scores:
   curl -X POST 'http://127.0.0.1:54321/functions/v1/sync-match-results' \
     -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     -H 'Content-Type: application/json'
+
+  # Knockout teams sync - update TBD teams with actual qualified teams (run daily):
+  curl -X POST 'http://127.0.0.1:54321/functions/v1/sync-match-results' \
+    -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+    -H 'Content-Type: application/json' \
+    -d '{"syncKnockoutTeams": true}'
+
+  # Knockout teams sync - dry run (shows what would be updated):
+  curl -X POST 'http://127.0.0.1:54321/functions/v1/sync-match-results' \
+    -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+    -H 'Content-Type: application/json' \
+    -d '{"syncKnockoutTeams": true, "dryRun": true}'
 
   # Test mode (Premier League - shows API data without DB updates):
   curl -X POST 'http://127.0.0.1:54321/functions/v1/sync-match-results' \
