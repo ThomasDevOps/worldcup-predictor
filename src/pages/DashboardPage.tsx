@@ -12,6 +12,12 @@ export function DashboardPage() {
   // Get live matches
   const liveMatches = matches.filter((m) => m.status === 'live')
 
+  // Get recent finished matches (last 3, most recent first)
+  const recentMatches = matches
+    .filter((m) => m.status === 'finished')
+    .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
+    .slice(0, 3)
+
   // Get upcoming matches (next 3)
   const upcomingMatches = matches
     .filter((m) => m.status === 'scheduled')
@@ -63,6 +69,24 @@ export function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {liveMatches.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Matches */}
+      {!matchesLoading && recentMatches.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Recent Results</h2>
+            <Link to="/matches" className="text-primary text-sm hover:underline">
+              View all
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentMatches.map((match) => (
               <MatchCard key={match.id} match={match} />
             ))}
           </div>

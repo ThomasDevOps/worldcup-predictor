@@ -74,7 +74,7 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
                 {match.home_score ?? 0} - {match.away_score ?? 0}
               </div>
             ) : isFinished ? (
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-success">
                 {match.home_score} - {match.away_score}
               </div>
             ) : (
