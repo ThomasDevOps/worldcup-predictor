@@ -92,15 +92,16 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch matches from football-data.org
-    const dateFrom = new Date();
-    dateFrom.setDate(dateFrom.getDate() - daysBack);
-    const dateTo = new Date();
-    dateTo.setDate(dateTo.getDate() + 1);
+    // Only fetch live matches (IN_PLAY, PAUSED) and recently finished matches (FINISHED)
+    // This minimizes API usage - we don't need scheduled matches or old finished matches
+    const today = new Date().toISOString().split("T")[0];
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     // Use PL (Premier League) for test mode to get real match data
     const competitionCode = testMode ? "PL" : competition;
 
-    const apiUrl = `${FOOTBALL_DATA_API_URL}/competitions/${competitionCode}/matches?dateFrom=${dateFrom.toISOString().split("T")[0]}&dateTo=${dateTo.toISOString().split("T")[0]}`;
+    // Fetch live matches + finished matches from today (grace period for delayed API updates)
+    const apiUrl = `${FOOTBALL_DATA_API_URL}/competitions/${competitionCode}/matches?status=IN_PLAY,PAUSED,FINISHED&dateFrom=${today}&dateTo=${tomorrow}`;
 
     console.log(`Fetching matches from: ${apiUrl}`);
     console.log(
@@ -212,6 +213,12 @@ Deno.serve(async (req) => {
           results.errors.push(
             `Match not found in DB: ${homeTeam.name} vs ${awayTeam.name} on ${matchDate}`
           );
+          continue;
+        }
+
+        // Skip matches already finished in our database - they never need updates
+        if (dbMatch.status === "finished") {
+          results.skipped++;
           continue;
         }
 

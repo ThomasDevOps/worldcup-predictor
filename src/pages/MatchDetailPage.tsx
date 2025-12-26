@@ -32,12 +32,15 @@ export function MatchDetailPage() {
     )
   }
 
+  // match_date is stored as UTC in database, Date objects compare using UTC internally
   const matchDate = new Date(match.match_date)
-  const isPastKickoff = matchDate <= new Date()
+  const now = new Date()
+  const lockoutTime = new Date(matchDate.getTime() - 15 * 60 * 1000) // 15 minutes before kickoff
+  const isPastLockout = now >= lockoutTime
   const isFinished = match.status === 'finished'
   const isLive = match.status === 'live'
-  const isLocked = isPastKickoff || isFinished || isLive
-  const canEdit = !isPastKickoff && match.status === 'scheduled' && !isLive
+  const isLocked = isPastLockout || isFinished || isLive
+  const canEdit = !isPastLockout && match.status === 'scheduled' && !isLive
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
