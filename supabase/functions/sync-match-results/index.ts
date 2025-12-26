@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       testMode = false,
       competition = WORLD_CUP_CODE,
       dryRun = false,
-      daysBack = 7,
+      // daysBack reserved for future use (e.g., fetching historical results)
     } = body;
 
     // Get API key from environment

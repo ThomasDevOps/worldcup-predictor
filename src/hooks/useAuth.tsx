@@ -91,13 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCachedUser(session?.user ?? null)
 
       if (session?.user) {
-        // If we have cached profile for this user, just refresh in background
-        if (cachedProfile && cachedProfile.id === session.user.id) {
-          // Already showing content (loading was false), just refresh profile
-          fetchOrCreateProfile(session.user.id, session.user, true)
-        } else {
-          // No cache or different user, fetch and wait
-          await fetchOrCreateProfile(session.user.id, session.user, false)
+        // Always show cached data immediately, refresh profile in background
+        fetchOrCreateProfile(session.user.id, session.user)
+        // Only set loading false if we had no cached data
+        if (!cachedProfile || cachedProfile.id !== session.user.id) {
           if (isMounted) setLoading(false)
         }
       } else {
@@ -125,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
           profileFetchedRef.current = false
         } else if (session?.user && event === 'SIGNED_IN') {
-          await fetchOrCreateProfile(session.user.id, session.user, false)
+          fetchOrCreateProfile(session.user.id, session.user)
           if (isMounted) setLoading(false)
         }
       }
@@ -139,21 +136,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  async function fetchOrCreateProfile(userId: string, user: User, isBackground = false) {
+  async function fetchOrCreateProfile(userId: string, user: User) {
     // Skip if already fetched in this session (prevent duplicate calls)
-    if (profileFetchedRef.current && isBackground) return
+    if (profileFetchedRef.current) return
     profileFetchedRef.current = true
 
-    // Shorter timeout for better UX
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-    )
-
     try {
-      const { data, error } = await Promise.race([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        timeoutPromise
-      ])
+      // No timeout - cached data is already shown, this is a background refresh
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
       if (error && error.code === 'PGRST116') {
         // Profile not found - create it from user metadata (set during signup)
@@ -181,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCachedProfile(data)
       }
     } catch (err) {
-      console.error('Profile fetch failed (timeout or error):', err)
-      // On timeout, keep using cached profile if available
+      console.error('Profile fetch failed:', err)
+      // Keep using cached profile if available
     }
   }
 
