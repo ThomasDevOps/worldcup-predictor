@@ -52,3 +52,4 @@ supabase/config.toml
 
 # Claude Code local settings
 .claude/settings.local.json
+.mcp.json
