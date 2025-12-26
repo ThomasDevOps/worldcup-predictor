@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/database.types'
 
 const PROFILE_CACHE_KEY = 'wc26_cached_profile'
+const USER_CACHE_KEY = 'wc26_cached_user'
 
 interface AuthContextType {
   user: User | null
@@ -41,12 +42,38 @@ function setCachedProfile(profile: Profile | null) {
   }
 }
 
+// Helper to get cached user from localStorage (for instant hydration)
+function getCachedUser(): User | null {
+  try {
+    const cached = localStorage.getItem(USER_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+// Helper to cache user in localStorage
+function setCachedUser(user: User | null) {
+  try {
+    if (user) {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user))
+    } else {
+      localStorage.removeItem(USER_CACHE_KEY)
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Initialize with cached profile for instant hydration
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(getCachedProfile)
+  // Initialize with cached data for instant hydration
+  const cachedUser = getCachedUser()
+  const cachedProfile = getCachedProfile()
+  const [user, setUser] = useState<User | null>(cachedUser)
+  const [profile, setProfile] = useState<Profile | null>(cachedProfile)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  // If we have cached user, start with loading=false for instant render
+  const [loading, setLoading] = useState(!cachedUser)
   const profileFetchedRef = useRef(false)
 
   useEffect(() => {
@@ -61,13 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(session)
       setUser(session?.user ?? null)
+      setCachedUser(session?.user ?? null)
 
       if (session?.user) {
-        // If we have cached profile, show content immediately
-        const cached = getCachedProfile()
-        if (cached && cached.id === session.user.id) {
-          setLoading(false)
-          // Refresh profile in background
+        // If we have cached profile for this user, just refresh in background
+        if (cachedProfile && cachedProfile.id === session.user.id) {
+          // Already showing content (loading was false), just refresh profile
           fetchOrCreateProfile(session.user.id, session.user, true)
         } else {
           // No cache or different user, fetch and wait
@@ -75,7 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (isMounted) setLoading(false)
         }
       } else {
+        // No valid session - clear all caches
         setCachedProfile(null)
+        setCachedUser(null)
         setProfile(null)
         setLoading(false)
       }
@@ -88,9 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(session)
         setUser(session?.user ?? null)
+        setCachedUser(session?.user ?? null)
 
         if (event === 'SIGNED_OUT') {
           setCachedProfile(null)
+          setCachedUser(null)
           setProfile(null)
           setLoading(false)
           profileFetchedRef.current = false
