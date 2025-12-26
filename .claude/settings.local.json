@@ -43,7 +43,11 @@
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_console_messages",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "Bash(if not exist \"C:\\\\Users\\\\Thomas\\\\OneDrive - LT Consult\\\\Documents\\\\repos\\\\wc26-predictor\\\\.vscode\" mkdir \"C:\\\\Users\\\\Thomas\\\\OneDrive - LT Consult\\\\Documents\\\\repos\\\\wc26-predictor\\\\.vscode\")",
+      "Bash(npm run lint)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)"
     ]
   },
   "enabledMcpjsonServers": [

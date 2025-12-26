@@ -13,6 +13,7 @@ export function MatchDetailPage() {
   const { prediction, saving, savePrediction } = usePrediction(matchId!)
   const { predictions, loading: predictionsLoading } = useMatchPredictions(matchId!)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false)
 
   if (matchLoading) {
     return (
@@ -55,10 +56,15 @@ export function MatchDetailPage() {
 
   const handleSavePrediction = async (homeScore: number, awayScore: number) => {
     setSaveError(null)
+    setSaveSuccess(false)
     const { error } = await savePrediction(homeScore, awayScore)
     if (error) {
       console.error('Error saving prediction:', error)
       setSaveError(error.message || 'Failed to save prediction. Please try again.')
+    } else {
+      setSaveSuccess(true)
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000)
     }
   }
 
@@ -129,6 +135,7 @@ export function MatchDetailPage() {
             match={match}
             prediction={prediction}
             saving={saving}
+            saveSuccess={saveSuccess}
             onSave={handleSavePrediction}
           />
           {saveError && (

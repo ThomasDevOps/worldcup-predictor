@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { MatchWithTeams, Prediction } from '../lib/database.types'
 
 interface PredictionFormProps {
   match: MatchWithTeams
   prediction: Prediction | null
   saving: boolean
+  saveSuccess?: boolean
   onSave: (homeScore: number, awayScore: number) => Promise<void>
 }
 
-export function PredictionForm({ match, prediction, saving, onSave }: PredictionFormProps) {
+export function PredictionForm({ match, prediction, saving, saveSuccess, onSave }: PredictionFormProps) {
   const [homeScore, setHomeScore] = useState<string>('')
   const [awayScore, setAwayScore] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const wasUpdateRef = useRef<boolean>(false)
 
   const matchDate = new Date(match.match_date)
   const isPastKickoff = matchDate <= new Date()
@@ -41,6 +43,8 @@ export function PredictionForm({ match, prediction, saving, onSave }: Prediction
       return
     }
 
+    // Track whether this was an update for the success message
+    wasUpdateRef.current = !!prediction
     await onSave(home, away)
   }
 
@@ -97,6 +101,12 @@ export function PredictionForm({ match, prediction, saving, onSave }: Prediction
       </div>
 
       {error && <p className="text-live text-center text-sm">{error}</p>}
+
+      {saveSuccess && (
+        <div className="bg-success/20 text-success text-center text-sm py-2 px-4 rounded-lg animate-fade-in">
+          {wasUpdateRef.current ? 'Prediction updated!' : 'Prediction saved!'}
+        </div>
+      )}
 
       <button
         type="submit"
