@@ -12,10 +12,14 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, userPrediction }: MatchCardProps) {
+  // match_date is stored as UTC in database, Date objects compare using UTC internally
   const matchDate = new Date(match.match_date)
-  const isPastKickoff = matchDate <= new Date()
+  const now = new Date()
+  const lockoutTime = new Date(matchDate.getTime() - 15 * 60 * 1000) // 15 minutes before kickoff
+  const isPastLockout = now >= lockoutTime
   const isFinished = match.status === 'finished'
-  const isLocked = isPastKickoff || isFinished
+  const isLive = match.status === 'live'
+  const isLocked = isPastLockout || isFinished || isLive
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -38,8 +42,14 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
         {/* Stage Badge */}
         <div className="flex justify-between items-center mb-4">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
+          {isLive && (
+            <span className="badge bg-live/20 text-live flex items-center gap-1">
+              <span className="w-2 h-2 bg-live rounded-full animate-pulse"></span>
+              LIVE
+            </span>
+          )}
           {isFinished && <span className="badge-success">FINAL</span>}
-          {isLocked && !isFinished && (
+          {isLocked && !isFinished && !isLive && (
             <span className="badge bg-warning/20 text-warning">LOCKED</span>
           )}
           {!isLocked && (
@@ -59,7 +69,11 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
 
           {/* Score / VS */}
           <div className="px-4">
-            {isFinished ? (
+            {isLive ? (
+              <div className="text-2xl font-bold text-live">
+                {match.home_score ?? 0} - {match.away_score ?? 0}
+              </div>
+            ) : isFinished ? (
               <div className="text-2xl font-bold">
                 {match.home_score} - {match.away_score}
               </div>

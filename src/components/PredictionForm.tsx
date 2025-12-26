@@ -15,9 +15,12 @@ export function PredictionForm({ match, prediction, saving, saveSuccess, onSave 
   const [error, setError] = useState<string | null>(null)
   const wasUpdateRef = useRef<boolean>(false)
 
+  // match_date is stored as UTC in database, Date objects compare using UTC internally
   const matchDate = new Date(match.match_date)
-  const isPastKickoff = matchDate <= new Date()
-  const isLocked = isPastKickoff || match.status === 'finished'
+  const now = new Date()
+  const lockoutTime = new Date(matchDate.getTime() - 15 * 60 * 1000) // 15 minutes before kickoff
+  const isPastLockout = now >= lockoutTime
+  const isLocked = isPastLockout || match.status === 'finished' || match.status === 'live'
 
   useEffect(() => {
     if (prediction) {
@@ -61,8 +64,8 @@ export function PredictionForm({ match, prediction, saving, saveSuccess, onSave 
     )
   }
 
-  // Calculate time until lockout
-  const timeUntilLock = matchDate.getTime() - new Date().getTime()
+  // Calculate time until lockout (15 minutes before kickoff)
+  const timeUntilLock = lockoutTime.getTime() - now.getTime()
   const hoursUntilLock = Math.floor(timeUntilLock / (1000 * 60 * 60))
   const minutesUntilLock = Math.floor((timeUntilLock % (1000 * 60 * 60)) / (1000 * 60))
 

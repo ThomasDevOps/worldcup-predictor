@@ -86,6 +86,7 @@ Custom dark theme colors in `tailwind.config.js`: `background`, `card`, `primary
 - `002_scoring_trigger.sql` - Points calculation
 - `003_row_level_security.sql` - RLS policies
 - `004_seed_data.sql` - 48 teams, 104 matches
+- `008_scheduled_match_sync.sql` - Automatic match result sync via cron
 
 **Rules:** Never modify deployed migrations. Create new files for changes. Migrations auto-run via GitHub Actions.
 
@@ -117,6 +118,81 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
 - Predictions lock at match kickoff (not 15 min before)
 - Points calculated by DB trigger - never modify `points_earned` directly
 - Admin flag (`is_admin`) must be set manually in Supabase after signup
+
+## Automatic Match Result Sync
+
+Matches are automatically synced from football-data.org API using an Edge Function + pg_cron.
+
+### How It Works
+
+1. **Edge Function** (`supabase/functions/sync-match-results/`) fetches World Cup matches from football-data.org
+2. **pg_cron** calls the Edge Function on a schedule (when enabled)
+3. Match scores are updated in the database
+4. The scoring trigger automatically calculates prediction points
+
+### Enable/Disable Sync (SQL Editor)
+
+```sql
+-- Enable sync every 10 minutes
+SELECT toggle_match_sync(true, 10);
+
+-- Enable sync every 5 minutes (during active matches)
+SELECT toggle_match_sync(true, 5);
+
+-- Disable sync
+SELECT toggle_match_sync(false);
+
+-- Check current cron jobs
+SELECT * FROM cron.job;
+
+-- View sync history
+SELECT * FROM match_sync_logs ORDER BY started_at DESC LIMIT 10;
+```
+
+### Manual Sync (One-Time)
+
+**Production:**
+```bash
+curl -X POST "https://YOUR_PROJECT_REF.supabase.co/functions/v1/sync-match-results" \
+  -H "Authorization: Bearer YOUR_ANON_KEY" \
+  -H "Content-Type: application/json"
+```
+
+**Local:**
+```bash
+# Start Edge Functions first
+npx supabase functions serve --env-file supabase/.env.local
+
+# Then trigger sync
+curl -X POST "http://127.0.0.1:54321/functions/v1/sync-match-results" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+  -H "Content-Type: application/json"
+```
+
+### Test Mode (Premier League)
+
+Test the API integration using Premier League data (without updating DB):
+
+```bash
+curl -X POST "http://127.0.0.1:54321/functions/v1/sync-match-results" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" \
+  -H "Content-Type: application/json" \
+  -d '{"testMode": true}'
+```
+
+### Dry Run Mode
+
+See what would be updated without making changes:
+
+```bash
+curl -X POST "..." -d '{"dryRun": true}'
+```
+
+### API Key
+
+The `FOOTBALL_DATA_API_KEY` must be set in Supabase Edge Function secrets (Dashboard → Project Settings → Edge Functions → Secrets).
+
+Free tier: 10 requests/minute. Get key at: https://www.football-data.org/client/register
 
 ## PRD
 

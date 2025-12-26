@@ -1,0 +1,46 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy sync-match-results
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Configure production URLs in database
+        run: |
+          # Set the production Edge Function base URL
+          supabase db execute --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+            --sql "SELECT set_app_config('edge_function_base_url', 'https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co');"
+
+          # Set the service role key for cron job authentication
+          supabase db execute --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+            --sql "SELECT set_app_config('service_role_key', '${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}');"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

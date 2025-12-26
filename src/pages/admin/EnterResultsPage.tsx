@@ -34,7 +34,7 @@ export function EnterResultsPage() {
     setError(null)
   }
 
-  const handleSave = async (matchId: string) => {
+  const handleSave = async (matchId: string, markAsFinished: boolean = true) => {
     setError(null)
 
     const home = parseInt(homeScore, 10)
@@ -52,12 +52,19 @@ export function EnterResultsPage() {
 
     setSaving(true)
 
+    const match = matches.find((m) => m.id === matchId)
+    const newStatus = markAsFinished
+      ? 'finished'
+      : match?.status === 'scheduled'
+        ? 'live'
+        : match?.status
+
     const { error } = await supabase
       .from('matches')
       .update({
         home_score: home,
         away_score: away,
-        status: 'finished' as MatchStatus,
+        status: newStatus as MatchStatus,
       })
       .eq('id', matchId)
 
@@ -82,16 +89,19 @@ export function EnterResultsPage() {
 
       {/* Filter */}
       <div className="flex gap-2">
-        {(['all', 'scheduled', 'finished'] as FilterStatus[]).map((status) => (
+        {(['all', 'live', 'scheduled', 'finished'] as FilterStatus[]).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
               filter === status
-                ? 'bg-primary text-white'
+                ? status === 'live'
+                  ? 'bg-live text-white'
+                  : 'bg-primary text-white'
                 : 'bg-card text-text-secondary hover:bg-card/80'
             }`}
           >
+            {status === 'live' && <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse mr-1"></span>}
             {status}
           </button>
         ))}
@@ -109,12 +119,15 @@ export function EnterResultsPage() {
               <div className="flex items-center justify-between mb-4">
                 <span className="badge bg-primary/20 text-primary">{match.stage}</span>
                 <span
-                  className={`badge ${
-                    match.status === 'finished'
-                      ? 'badge-success'
-                      : 'bg-text-secondary/20 text-text-secondary'
+                  className={`badge flex items-center gap-1 ${
+                    match.status === 'live'
+                      ? 'bg-live/20 text-live'
+                      : match.status === 'finished'
+                        ? 'badge-success'
+                        : 'bg-text-secondary/20 text-text-secondary'
                   }`}
                 >
+                  {match.status === 'live' && <span className="w-2 h-2 bg-live rounded-full animate-pulse"></span>}
                   {match.status.toUpperCase()}
                 </span>
               </div>
@@ -146,10 +159,12 @@ export function EnterResultsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="text-2xl font-bold px-4">
-                    {match.status === 'finished'
-                      ? `${match.home_score} - ${match.away_score}`
-                      : 'vs'}
+                  <div className={`text-2xl font-bold px-4 ${match.status === 'live' ? 'text-live' : ''}`}>
+                    {match.status === 'live'
+                      ? `${match.home_score ?? 0} - ${match.away_score ?? 0}`
+                      : match.status === 'finished'
+                        ? `${match.home_score} - ${match.away_score}`
+                        : 'vs'}
                   </div>
                 )}
 
@@ -174,16 +189,52 @@ export function EnterResultsPage() {
                 <p className="text-live text-sm mb-4">{error}</p>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {editingMatch === match.id ? (
                   <>
-                    <button
-                      onClick={() => handleSave(match.id)}
-                      disabled={saving}
-                      className="btn-primary disabled:opacity-50"
-                    >
-                      {saving ? 'Saving...' : 'Save Result'}
-                    </button>
+                    {match.status === 'live' ? (
+                      <>
+                        <button
+                          onClick={() => handleSave(match.id, false)}
+                          disabled={saving}
+                          className="btn-secondary disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Update Score'}
+                        </button>
+                        <button
+                          onClick={() => handleSave(match.id, true)}
+                          disabled={saving}
+                          className="btn-primary disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Finish Match'}
+                        </button>
+                      </>
+                    ) : match.status === 'scheduled' ? (
+                      <>
+                        <button
+                          onClick={() => handleSave(match.id, false)}
+                          disabled={saving}
+                          className="btn-secondary disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Start Live'}
+                        </button>
+                        <button
+                          onClick={() => handleSave(match.id, true)}
+                          disabled={saving}
+                          className="btn-primary disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Save as Final'}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleSave(match.id, true)}
+                        disabled={saving}
+                        className="btn-primary disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save Result'}
+                      </button>
+                    )}
                     <button onClick={handleCancel} className="btn-secondary">
                       Cancel
                     </button>
@@ -193,7 +244,11 @@ export function EnterResultsPage() {
                     onClick={() => handleEdit(match)}
                     className="btn-primary"
                   >
-                    {match.status === 'finished' ? 'Edit Result' : 'Enter Result'}
+                    {match.status === 'finished'
+                      ? 'Edit Result'
+                      : match.status === 'live'
+                        ? 'Update Score'
+                        : 'Enter Result'}
                   </button>
                 )}
               </div>

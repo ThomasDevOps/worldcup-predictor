@@ -8,6 +8,7 @@ dist-ssr
 # Environment variables
 .env
 .env.local
+supabase/.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -15,6 +16,7 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
 .idea
 .DS_Store
 *.suo
@@ -44,3 +46,9 @@ test-results
 
 # Misc
 .cache
+
+# Local Supabase config
+supabase/config.toml
+
+# Claude Code local settings
+.claude/settings.local.json

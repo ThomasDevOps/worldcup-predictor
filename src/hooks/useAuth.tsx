@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/database.types'
+
+const PROFILE_CACHE_KEY = 'wc26_cached_profile'
+const USER_CACHE_KEY = 'wc26_cached_user'
 
 interface AuthContextType {
   user: User | null
@@ -16,52 +19,131 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Helper to get cached profile from localStorage
+function getCachedProfile(): Profile | null {
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+// Helper to cache profile in localStorage
+function setCachedProfile(profile: Profile | null) {
+  try {
+    if (profile) {
+      localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile))
+    } else {
+      localStorage.removeItem(PROFILE_CACHE_KEY)
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+// Helper to get cached user from localStorage (for instant hydration)
+function getCachedUser(): User | null {
+  try {
+    const cached = localStorage.getItem(USER_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+// Helper to cache user in localStorage
+function setCachedUser(user: User | null) {
+  try {
+    if (user) {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user))
+    } else {
+      localStorage.removeItem(USER_CACHE_KEY)
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  // Initialize with cached data for instant hydration
+  const cachedUser = getCachedUser()
+  const cachedProfile = getCachedProfile()
+  const [user, setUser] = useState<User | null>(cachedUser)
+  const [profile, setProfile] = useState<Profile | null>(cachedProfile)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  // If we have cached user, start with loading=false for instant render
+  const [loading, setLoading] = useState(!cachedUser)
+  const profileFetchedRef = useRef(false)
 
   useEffect(() => {
-    // Listen for auth changes - handles login, logout, and token refresh
+    let isMounted = true
+
+    // Single initialization function
+    async function initializeAuth() {
+      // Get session first
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!isMounted) return
+
+      setSession(session)
+      setUser(session?.user ?? null)
+      setCachedUser(session?.user ?? null)
+
+      if (session?.user) {
+        // Always show cached data immediately, refresh profile in background
+        fetchOrCreateProfile(session.user.id, session.user)
+        // Only set loading false if we had no cached data
+        if (!cachedProfile || cachedProfile.id !== session.user.id) {
+          if (isMounted) setLoading(false)
+        }
+      } else {
+        // No valid session - clear all caches
+        setCachedProfile(null)
+        setCachedUser(null)
+        setProfile(null)
+        setLoading(false)
+      }
+    }
+
+    // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (!isMounted) return
+
         setSession(session)
         setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchOrCreateProfile(session.user.id, session.user)
-        } else {
+        setCachedUser(session?.user ?? null)
+
+        if (event === 'SIGNED_OUT') {
+          setCachedProfile(null)
+          setCachedUser(null)
           setProfile(null)
+          setLoading(false)
+          profileFetchedRef.current = false
+        } else if (session?.user && event === 'SIGNED_IN') {
+          fetchOrCreateProfile(session.user.id, session.user)
+          if (isMounted) setLoading(false)
         }
-        setLoading(false)
       }
     )
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchOrCreateProfile(session.user.id, session.user)
-      } else {
-        setLoading(false)
-      }
-    })
+    initializeAuth()
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchOrCreateProfile(userId: string, user: User) {
-    // Add timeout to prevent infinite loading if Supabase hangs
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-    )
+    // Skip if already fetched in this session (prevent duplicate calls)
+    if (profileFetchedRef.current) return
+    profileFetchedRef.current = true
 
     try {
-      const { data, error } = await Promise.race([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        timeoutPromise
-      ])
+      // No timeout - cached data is already shown, this is a background refresh
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
       if (error && error.code === 'PGRST116') {
         // Profile not found - create it from user metadata (set during signup)
@@ -80,16 +162,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Error creating profile:', createError)
         } else {
           setProfile(newProfile)
+          setCachedProfile(newProfile)
         }
       } else if (error) {
         console.error('Error fetching profile:', error)
       } else {
         setProfile(data)
+        setCachedProfile(data)
       }
     } catch (err) {
-      console.error('Profile fetch failed (timeout or error):', err)
+      console.error('Profile fetch failed:', err)
+      // Keep using cached profile if available
     }
-    setLoading(false)
   }
 
   async function signIn(email: string, password: string) {
@@ -161,6 +245,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    setCachedProfile(null)
+    profileFetchedRef.current = false
   }
 
   const value = {
