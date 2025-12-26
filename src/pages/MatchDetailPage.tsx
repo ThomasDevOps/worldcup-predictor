@@ -34,8 +34,9 @@ export function MatchDetailPage() {
 
   const matchDate = new Date(match.match_date)
   const isPastKickoff = matchDate <= new Date()
+  const isLive = match.status === 'live'
   const isFinished = match.status === 'finished'
-  const isLocked = isPastKickoff || isFinished
+  const isLocked = isPastKickoff || isLive || isFinished
   const canEdit = !isPastKickoff && match.status === 'scheduled'
 
   const formatDate = (date: Date) => {
@@ -84,7 +85,10 @@ export function MatchDetailPage() {
         <div className="flex justify-between items-center mb-6">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
           {isFinished && <span className="badge-success">FINAL</span>}
-          {isLocked && !isFinished && (
+          {isLive && (
+            <span className="badge-live animate-pulse">LIVE</span>
+          )}
+          {isLocked && !isFinished && !isLive && (
             <span className="badge bg-warning/20 text-warning">LOCKED</span>
           )}
         </div>
@@ -99,9 +103,9 @@ export function MatchDetailPage() {
 
           {/* Score / VS */}
           <div className="px-8 text-center">
-            {isFinished ? (
-              <div className="text-4xl font-bold">
-                {match.home_score} - {match.away_score}
+            {isFinished || isLive ? (
+              <div className={`text-4xl font-bold ${isLive ? 'text-live' : ''}`}>
+                {match.home_score ?? 0} - {match.away_score ?? 0}
               </div>
             ) : (
               <div className="text-2xl text-text-secondary">vs</div>

@@ -14,8 +14,9 @@ interface MatchCardProps {
 export function MatchCard({ match, userPrediction }: MatchCardProps) {
   const matchDate = new Date(match.match_date)
   const isPastKickoff = matchDate <= new Date()
+  const isLive = match.status === 'live'
   const isFinished = match.status === 'finished'
-  const isLocked = isPastKickoff || isFinished
+  const isLocked = isPastKickoff || isLive || isFinished
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -39,7 +40,10 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
         <div className="flex justify-between items-center mb-4">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
           {isFinished && <span className="badge-success">FINAL</span>}
-          {isLocked && !isFinished && (
+          {isLive && (
+            <span className="badge-live animate-pulse">LIVE</span>
+          )}
+          {isLocked && !isFinished && !isLive && (
             <span className="badge bg-warning/20 text-warning">LOCKED</span>
           )}
           {!isLocked && (
@@ -59,9 +63,9 @@ export function MatchCard({ match, userPrediction }: MatchCardProps) {
 
           {/* Score / VS */}
           <div className="px-4">
-            {isFinished ? (
-              <div className="text-2xl font-bold">
-                {match.home_score} - {match.away_score}
+            {isFinished || isLive ? (
+              <div className={`text-2xl font-bold ${isLive ? 'text-live' : ''}`}>
+                {match.home_score ?? 0} - {match.away_score ?? 0}
               </div>
             ) : (
               <div className="text-text-secondary">vs</div>

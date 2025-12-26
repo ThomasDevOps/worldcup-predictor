@@ -47,7 +47,8 @@
       "Bash(if not exist \"C:\\\\Users\\\\Thomas\\\\OneDrive - LT Consult\\\\Documents\\\\repos\\\\wc26-predictor\\\\.vscode\" mkdir \"C:\\\\Users\\\\Thomas\\\\OneDrive - LT Consult\\\\Documents\\\\repos\\\\wc26-predictor\\\\.vscode\")",
       "Bash(npm run lint)",
       "Bash(npm run build:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "mcp__playwright__browser_close"
     ]
   },
   "enabledMcpjsonServers": [
