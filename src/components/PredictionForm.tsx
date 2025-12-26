@@ -73,7 +73,7 @@ export function PredictionForm({ match, prediction, saving, saveSuccess, onSave 
     <form onSubmit={handleSubmit} className="space-y-4">
       <h3 className="text-lg font-semibold text-center">Your Prediction</h3>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-end justify-center gap-4">
         <div className="text-center">
           <div className="text-sm text-text-secondary mb-2">{match.home_team.name}</div>
           <input
@@ -87,7 +87,7 @@ export function PredictionForm({ match, prediction, saving, saveSuccess, onSave 
           />
         </div>
 
-        <span className="text-2xl text-text-secondary">-</span>
+        <span className="text-2xl text-text-secondary pb-2">-</span>
 
         <div className="text-center">
           <div className="text-sm text-text-secondary mb-2">{match.away_team.name}</div>
