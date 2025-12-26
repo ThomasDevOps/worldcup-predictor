@@ -35,8 +35,9 @@ export function MatchDetailPage() {
   const matchDate = new Date(match.match_date)
   const isPastKickoff = matchDate <= new Date()
   const isFinished = match.status === 'finished'
-  const isLocked = isPastKickoff || isFinished
-  const canEdit = !isPastKickoff && match.status === 'scheduled'
+  const isLive = match.status === 'live'
+  const isLocked = isPastKickoff || isFinished || isLive
+  const canEdit = !isPastKickoff && match.status === 'scheduled' && !isLive
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -83,8 +84,14 @@ export function MatchDetailPage() {
         {/* Stage Badge */}
         <div className="flex justify-between items-center mb-6">
           <span className="badge bg-primary/20 text-primary">{match.stage}</span>
+          {isLive && (
+            <span className="badge bg-live/20 text-live flex items-center gap-1">
+              <span className="w-2 h-2 bg-live rounded-full animate-pulse"></span>
+              LIVE
+            </span>
+          )}
           {isFinished && <span className="badge-success">FINAL</span>}
-          {isLocked && !isFinished && (
+          {isLocked && !isFinished && !isLive && (
             <span className="badge bg-warning/20 text-warning">LOCKED</span>
           )}
         </div>
@@ -99,7 +106,11 @@ export function MatchDetailPage() {
 
           {/* Score / VS */}
           <div className="px-8 text-center">
-            {isFinished ? (
+            {isLive ? (
+              <div className="text-4xl font-bold text-live">
+                {match.home_score ?? 0} - {match.away_score ?? 0}
+              </div>
+            ) : isFinished ? (
               <div className="text-4xl font-bold">
                 {match.home_score} - {match.away_score}
               </div>
@@ -144,8 +155,8 @@ export function MatchDetailPage() {
         </div>
       )}
 
-      {/* User's Prediction (after lockout, before showing all) */}
-      {isLocked && prediction && !isFinished && (
+      {/* User's Prediction (show during live match) */}
+      {isLive && prediction && (
         <div className="card">
           <h3 className="text-lg font-semibold mb-4">Your Prediction</h3>
           <div className="text-center text-2xl font-mono">
