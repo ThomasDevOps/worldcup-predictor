@@ -14,6 +14,7 @@ export function Layout() {
   const adminLinks = [
     { to: '/admin', label: 'Admin' },
     { to: '/admin/results', label: 'Enter Results' },
+    { to: '/admin/users', label: 'Users' },
   ]
 
   return (

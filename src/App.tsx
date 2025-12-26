@@ -19,6 +19,7 @@ import { ProfilePage } from './pages/ProfilePage'
 // Admin pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { EnterResultsPage } from './pages/admin/EnterResultsPage'
+import { ManageUsersPage } from './pages/admin/ManageUsersPage'
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
             <Route element={<AdminRoute />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/results" element={<EnterResultsPage />} />
+              <Route path="/admin/users" element={<ManageUsersPage />} />
             </Route>
           </Route>
         </Route>

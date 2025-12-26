@@ -44,6 +44,9 @@ export function AdminDashboardPage() {
           <Link to="/admin/results" className="btn-primary">
             Enter Match Results
           </Link>
+          <Link to="/admin/users" className="btn-primary">
+            Manage Users
+          </Link>
           <Link to="/matches" className="btn-secondary">
             View All Matches
           </Link>
