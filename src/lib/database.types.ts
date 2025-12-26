@@ -177,6 +177,12 @@ export interface Database {
         }
         Returns: string | null
       }
+      reset_match_to_scheduled: {
+        Args: {
+          p_match_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       match_status: MatchStatus
