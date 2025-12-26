@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/database.types'
+
+const PROFILE_CACHE_KEY = 'wc26_cached_profile'
 
 interface AuthContextType {
   user: User | null
@@ -16,45 +18,105 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Helper to get cached profile from localStorage
+function getCachedProfile(): Profile | null {
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+// Helper to cache profile in localStorage
+function setCachedProfile(profile: Profile | null) {
+  try {
+    if (profile) {
+      localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile))
+    } else {
+      localStorage.removeItem(PROFILE_CACHE_KEY)
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Initialize with cached profile for instant hydration
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(getCachedProfile)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const profileFetchedRef = useRef(false)
 
   useEffect(() => {
-    // Listen for auth changes - handles login, logout, and token refresh
+    let isMounted = true
+
+    // Single initialization function
+    async function initializeAuth() {
+      // Get session first
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!isMounted) return
+
+      setSession(session)
+      setUser(session?.user ?? null)
+
+      if (session?.user) {
+        // If we have cached profile, show content immediately
+        const cached = getCachedProfile()
+        if (cached && cached.id === session.user.id) {
+          setLoading(false)
+          // Refresh profile in background
+          fetchOrCreateProfile(session.user.id, session.user, true)
+        } else {
+          // No cache or different user, fetch and wait
+          await fetchOrCreateProfile(session.user.id, session.user, false)
+          if (isMounted) setLoading(false)
+        }
+      } else {
+        setCachedProfile(null)
+        setProfile(null)
+        setLoading(false)
+      }
+    }
+
+    // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (!isMounted) return
+
         setSession(session)
         setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchOrCreateProfile(session.user.id, session.user)
-        } else {
+
+        if (event === 'SIGNED_OUT') {
+          setCachedProfile(null)
           setProfile(null)
+          setLoading(false)
+          profileFetchedRef.current = false
+        } else if (session?.user && event === 'SIGNED_IN') {
+          await fetchOrCreateProfile(session.user.id, session.user, false)
+          if (isMounted) setLoading(false)
         }
-        setLoading(false)
       }
     )
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchOrCreateProfile(session.user.id, session.user)
-      } else {
-        setLoading(false)
-      }
-    })
+    initializeAuth()
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
-  async function fetchOrCreateProfile(userId: string, user: User) {
-    // Add timeout to prevent infinite loading if Supabase hangs
+  async function fetchOrCreateProfile(userId: string, user: User, isBackground = false) {
+    // Skip if already fetched in this session (prevent duplicate calls)
+    if (profileFetchedRef.current && isBackground) return
+    profileFetchedRef.current = true
+
+    // Shorter timeout for better UX
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
     )
 
     try {
@@ -80,16 +142,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Error creating profile:', createError)
         } else {
           setProfile(newProfile)
+          setCachedProfile(newProfile)
         }
       } else if (error) {
         console.error('Error fetching profile:', error)
       } else {
         setProfile(data)
+        setCachedProfile(data)
       }
     } catch (err) {
       console.error('Profile fetch failed (timeout or error):', err)
+      // On timeout, keep using cached profile if available
     }
-    setLoading(false)
   }
 
   async function signIn(email: string, password: string) {
@@ -161,6 +225,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    setCachedProfile(null)
+    profileFetchedRef.current = false
   }
 
   const value = {
