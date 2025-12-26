@@ -36,11 +36,11 @@ jobs:
       - name: Configure production URLs in database
         run: |
           # Set the production Edge Function base URL
-          supabase db execute --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+          supabase db execute \
             --sql "SELECT set_app_config('edge_function_base_url', 'https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co');"
 
           # Set the service role key for cron job authentication
-          supabase db execute --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} \
+          supabase db execute \
             --sql "SELECT set_app_config('service_role_key', '${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}');"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
