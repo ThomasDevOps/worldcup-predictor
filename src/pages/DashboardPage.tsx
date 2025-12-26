@@ -9,6 +9,9 @@ export function DashboardPage() {
   const { matches, loading: matchesLoading } = useMatches()
   const { profiles, loading: leaderboardLoading } = useLeaderboard()
 
+  // Get live matches
+  const liveMatches = matches.filter((m) => m.status === 'live')
+
   // Get upcoming matches (next 3)
   const upcomingMatches = matches
     .filter((m) => m.status === 'scheduled')
@@ -44,6 +47,23 @@ export function DashboardPage() {
           <div className="text-3xl font-bold">{profiles.length}</div>
         </div>
       </div>
+
+      {/* Live Matches */}
+      {liveMatches.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-live rounded-full animate-pulse"></span>
+              Live Now
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {liveMatches.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Matches */}
       <div>
