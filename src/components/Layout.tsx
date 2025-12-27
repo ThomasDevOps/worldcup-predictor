@@ -7,6 +7,7 @@ export function Layout() {
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/matches', label: 'Matches' },
+    { to: '/bonus', label: 'Bonus' },
     { to: '/leaderboard', label: 'Leaderboard' },
     { to: '/my-predictions', label: 'My Predictions' },
   ]
@@ -14,6 +15,7 @@ export function Layout() {
   const adminLinks = [
     { to: '/admin', label: 'Admin' },
     { to: '/admin/results', label: 'Enter Results' },
+    { to: '/admin/bonus', label: 'Bonus Q' },
   ]
 
   return (

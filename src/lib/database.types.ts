@@ -166,6 +166,85 @@ export interface Database {
           }
         ]
       }
+      bonus_questions: {
+        Row: {
+          id: string
+          question_text: string
+          answer_type: string
+          points_value: number
+          correct_answer: string | null
+          deadline: string
+          is_graded: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          question_text: string
+          answer_type?: string
+          points_value?: number
+          correct_answer?: string | null
+          deadline: string
+          is_graded?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          question_text?: string
+          answer_type?: string
+          points_value?: number
+          correct_answer?: string | null
+          deadline?: string
+          is_graded?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bonus_answers: {
+        Row: {
+          id: string
+          user_id: string
+          question_id: string
+          answer: string
+          points_earned: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          question_id: string
+          answer: string
+          points_earned?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          question_id?: string
+          answer?: string
+          points_earned?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_answers_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bonus_answers_question_id_fkey"
+            columns: ["question_id"]
+            referencedRelation: "bonus_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -180,6 +259,13 @@ export interface Database {
       reset_match_to_scheduled: {
         Args: {
           p_match_id: string
+        }
+        Returns: undefined
+      }
+      grade_bonus_question: {
+        Args: {
+          p_question_id: string
+          p_correct_answer: string
         }
         Returns: undefined
       }
@@ -198,6 +284,8 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Team = Database['public']['Tables']['teams']['Row']
 export type Match = Database['public']['Tables']['matches']['Row']
 export type Prediction = Database['public']['Tables']['predictions']['Row']
+export type BonusQuestion = Database['public']['Tables']['bonus_questions']['Row']
+export type BonusAnswer = Database['public']['Tables']['bonus_answers']['Row']
 
 // Extended types with relations
 export interface MatchWithTeams extends Match {
@@ -211,4 +299,12 @@ export interface PredictionWithMatch extends Prediction {
 
 export interface PredictionWithUser extends Prediction {
   profile: Profile
+}
+
+export interface BonusAnswerWithQuestion extends BonusAnswer {
+  bonus_question: BonusQuestion
+}
+
+export interface BonusQuestionWithAnswer extends BonusQuestion {
+  bonus_answer?: BonusAnswer | null
 }
